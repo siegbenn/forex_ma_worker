@@ -116,7 +116,7 @@ def save_moving_average_tick ( pair, timestamp, moving_average_close, close, sen
 	tick.put()
 
 
-def create_queue_order ( pair, timestamp, direction, units ):
+def create_queue_order ( pair, direction, units ):
 
 	# Create connection to SQS queue.
 	conn = boto.sqs.connect_to_region('us-east-1')
@@ -124,17 +124,13 @@ def create_queue_order ( pair, timestamp, direction, units ):
 
 	# Set queue message.
 	message = Message()
-	message.set_body(timestamp + ': ' + pair + ' ' + direction +  ' ' + str(units) )
+	message.set_body( pair + ' ' + direction +  ' ' + str(units) )
 
 	# Set queue message attributes.
 	message.message_attributes = {
 		"pair": {
 			"data_type": "String",
 			"string_value": pair
-		},
-		"timestamp": {
-			"data_type": "String",
-			"string_value": timestamp
 		},
 		"direction": {
 			"data_type": "String",
@@ -149,7 +145,6 @@ def create_queue_order ( pair, timestamp, direction, units ):
 	# Write message to queue.
 	queue.write(message)
 
-
 def get_moving_average_tick ( pair ):
 
 	# Set the DynamoDB table.
@@ -157,7 +152,7 @@ def get_moving_average_tick ( pair ):
 
 	# Query for latest moving_average_tick.
 	ticks = table.query_2(
-		pair__eq = 'EUR_USD',
+		pair__eq = pair,
 		reverse = True,
 		limit = 1
 	)
@@ -175,7 +170,7 @@ def get_moving_average_tick ( pair ):
 		pair = tick['pair']
 		moving_average_close = tick['moving_average_close']
 		close = tick['moving_average_close']
-		sentiment = tick['bar_sum']
+		sentiment = tick['sentiment']
 
 	# Set the Moving_Average_Tick.
 	moving_average_tick = Moving_Average_Tick(timestamp,pair,moving_average_close,close, sentiment)
@@ -183,7 +178,7 @@ def get_moving_average_tick ( pair ):
 	# Return the Moving_Average_Tick.
 	return moving_average_tick
 
-def get_account_balance ( account, token ):
+def get_account ( account, token ):
 	
 	# Send request to oanda and check for 200 response status code.
 	response = requests.get('https://api-fxpractice.oanda.com/v1/accounts/' + str(account), headers = { 'Authorization': 'Bearer '+ token })
