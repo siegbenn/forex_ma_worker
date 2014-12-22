@@ -36,6 +36,14 @@ class Tick(object):
         self.ask = ask
         self.status = status
 
+# Object to hold price tick.
+class Position(object):
+
+    def __init__( self, pair, side, units ):
+        self.pair = pair
+        self.side = side
+        self.units = units
+
 # Create a Moving_Average_Tick with pair, length and ganularity.
 def create_moving_average_tick ( pair, length, granularity, token ):
 	
@@ -116,7 +124,7 @@ def save_moving_average_tick ( pair, timestamp, moving_average_close, close, sen
 	tick.put()
 
 
-def create_queue_order ( pair, direction, units ):
+def create_queue_order ( pair, side, units ):
 
 	# Create connection to SQS queue.
 	conn = boto.sqs.connect_to_region('us-east-1')
@@ -124,7 +132,7 @@ def create_queue_order ( pair, direction, units ):
 
 	# Set queue message.
 	message = Message()
-	message.set_body( pair + ' ' + direction +  ' ' + str(units) )
+	message.set_body( pair + ' ' + side +  ' ' + str(units) )
 
 	# Set queue message attributes.
 	message.message_attributes = {
@@ -132,9 +140,9 @@ def create_queue_order ( pair, direction, units ):
 			"data_type": "String",
 			"string_value": pair
 		},
-		"direction": {
+		"side": {
 			"data_type": "String",
-			"string_value": direction
+			"string_value": side
 		},
 		"units": {
 			"data_type": "Number",
@@ -217,7 +225,10 @@ def get_current_price ( pair, token ):
 	pair = response_json['prices'][0]['instrument']
 	bid = response_json['prices'][0]['bid']
 	ask = response_json['prices'][0]['ask']
-	status = response_json['prices'][0]['status']
+	if 'status' in response_json.keys():
+		status = response_json['prices'][0]['status']
+	else:
+		status = 'open'
 
 	# Set the Tick.
 	tick = Tick(timestamp,pair,bid,ask,status)
@@ -233,3 +244,36 @@ def send_email ( address, subject, message ):
         message,
         [address]
     )
+
+def create_order ( pair, account, token, side, units):
+	payload = {'instrument': pair, 'units': units, 'side': side,'type': 'market'}
+	response = requests.post('https://api-fxpractice.oanda.com/v1/accounts/' + str(account) + '/orders', data = payload , headers = { 'Authorization': 'Bearer '+ token })
+	status_code = response.status_code
+	if status_code != 200:
+		return False
+	else:
+		return True
+
+def get_position ( pair, account, token ):
+	# Send request to oanda and check for 200 response status code.
+	response = requests.get('https://api-fxpractice.oanda.com/v1/accounts/' + str(account) + '/positions/' + pair, headers = { 'Authorization': 'Bearer '+ token })
+	status_code = response.status_code
+	
+	response_json = response.json()
+	# ERROR CHECK: status_code.
+	if status_code != 200:
+		position = Position(pair, 'none', 0)
+		return position
+	else:
+		position = Position(pair, response_json['side'], response_json['units'])
+		return position
+
+def delete_position ( pair, account, token ):
+	# Send request to oanda and check for 200 response status code.
+	response = requests.delete('https://api-fxpractice.oanda.com/v1/accounts/' + str(account) + '/positions/' + pair, headers = { 'Authorization': 'Bearer '+ token })
+	status_code = response.status_code
+	if status_code != 200:
+		return False
+	else:
+		return True
+
