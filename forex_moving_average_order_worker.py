@@ -26,20 +26,14 @@ while messages == True:
 		current_position = position.pair
 		current_side = position.side
 		current_units = int(position.units)
-
-		if current_side == side and current_units == units:
-			print "don't make a trade"
+		
+		if current_side == side:
 			queue.delete_message(m)
-
 		else:
 			delete_position(pair, account_id, token)
 			time.sleep(0.5)
 			create_order(pair, account_id, token, side, units)
 			queue.delete_message(m)
-
-			print 'make a trade'
-
-
 	else:
 		messages = False
 
