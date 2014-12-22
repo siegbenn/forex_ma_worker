@@ -48,7 +48,8 @@ class Position(object):
 def create_moving_average_tick ( pair, length, granularity, token ):
 	
 	# Send request to oanda and check for 200 response status code.
-	response = requests.get('https://api-fxpractice.oanda.com/v1/candles?instrument=' + pair + '&count=' + str(length) + '&candleFormat=bidask&granularity=' + granularity + '&dailyAlignment=0&alignmentTimezone=America%2FNew_York', headers = { 'Authorization': 'Bearer '+ token })
+	# Add one extra day to length to account for the removal of an unfinished bars.
+	response = requests.get('https://api-fxpractice.oanda.com/v1/candles?instrument=' + pair + '&count=' + str(length + 1) + '&candleFormat=bidask&granularity=' + granularity + '&dailyAlignment=0&alignmentTimezone=America%2FNew_York', headers = { 'Authorization': 'Bearer '+ token })
 	status_code = response.status_code
 
 	# ERROR CHECK: status_code.
@@ -58,6 +59,17 @@ def create_moving_average_tick ( pair, length, granularity, token ):
 	# Convert the response to JSON and set variables used in moving average calculation.
 	response_json = response.json()
 	pair_candles = response_json['candles']
+
+	# Check for an unfinished bar.
+	if pair_candles[length]['complete'] == False:
+
+		# Remove the unfinished bar.
+		del pair_candles[-1]
+	else:
+
+		# No unfinished bar. Remove the oldest bar so length = 200.
+		del pair_candles[0]
+
 	bar_count = len(pair_candles)
 
 	# ERROR CHECK: pair_candles.
@@ -276,4 +288,3 @@ def delete_position ( pair, account, token ):
 		return False
 	else:
 		return True
-
