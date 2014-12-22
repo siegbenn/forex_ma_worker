@@ -1,3 +1,4 @@
+from globals import Globals
 from forex_moving_average_functions import get_moving_average_tick
 from forex_moving_average_functions import get_account
 from forex_moving_average_functions import get_instrument_list
@@ -8,9 +9,9 @@ import time
 import math
 
 # Initialize variables.
-account_id = 6915436
-token = '288b00b15a621d41699d496e287d1982-898404c2a1ffe97c68ef6d97e95eeb0f'
-margin = 10
+account_id = Globals.account
+token = Globals.token
+margin = Globals.margin
 market_open = False
 subject = 'Forex Order Queue Worker'
 body = "Order Queue\n\n"

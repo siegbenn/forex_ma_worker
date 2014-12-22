@@ -1,3 +1,4 @@
+from globals import Globals
 import requests
 import json
 import boto.dynamodb
@@ -288,3 +289,9 @@ def delete_position ( pair, account, token ):
 		return False
 	else:
 		return True
+
+x = create_moving_average_tick('EUR_USD', 200, 'D', Globals.token)
+print x.pair
+print x.moving_average_close
+print x.close
+print x.timestamp

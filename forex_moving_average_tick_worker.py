@@ -1,3 +1,4 @@
+from globals import Globals
 import time
 from forex_moving_average_functions import get_instrument_list
 from forex_moving_average_functions import create_moving_average_tick
@@ -5,8 +6,8 @@ from forex_moving_average_functions import save_moving_average_tick
 from forex_moving_average_functions import send_email
 
 # Initialize variables.
-account_id = 6915436
-token = '288b00b15a621d41699d496e287d1982-898404c2a1ffe97c68ef6d97e95eeb0f'
+account_id = Globals.account
+token = Globals.token
 subject = 'Forex Moving Average Tick Worker'
 body = 'All ticks have been saved.\n'
 bear = 0
