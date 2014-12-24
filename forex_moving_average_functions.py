@@ -20,12 +20,16 @@ class Moving_Average_Tick(object):
 
 # Object to hold account information.
 class Account(object):
-
-    def __init__( self, open_trades, open_orders, margin_available, balance ):
-        self.open_trades = open_trades
-        self.open_orders = open_orders
-        self.margin_available = margin_available
-        self.balance = balance
+	def __init__( self, margin_used, margin_available, unrealized_pl, realized_pl, margin_rate, open_trades, open_orders, balance, account_id ):
+   		self.margin_used = margin_used
+		self.margin_available = margin_available
+		self.unrealized_pl = unrealized_pl
+		self.realized_pl = realized_pl
+		self.margin_rate = margin_rate
+		self.open_trades = open_trades
+		self.open_orders = open_orders
+		self.balance = balance
+		self.account_id = account_id
 
 # Object to hold price tick.
 class Tick(object):
@@ -210,14 +214,20 @@ def get_account ( account, token ):
 		raise Exception('Request status code != 200.')
 
 	# Convert the response to JSON and set account variables.
+	
 	response_json = response.json()
+	margin_used = response_json['marginUsed']
+	margin_available = response_json ['marginAvail']
+	unrealized_pl = response_json['unrealizedPl']
+	realized_pl = response_json['realizedPl']
+	margin_rate = response_json['marginRate']
 	open_trades = response_json['openTrades']
 	open_orders = response_json['openOrders']
-	margin_available = response_json ['marginAvail']
 	balance = response_json['balance']
+	account_id = response_json['accountId']
 
 	# Set the Account.
-	account = Account(open_trades,open_orders,margin_available,balance)
+	account = Account(margin_used,margin_available,unrealized_pl,realized_pl,margin_rate,open_trades,open_orders,balance,account_id)
 
 	# Return the Account.
 	return account
@@ -289,3 +299,19 @@ def delete_position ( pair, account, token ):
 		return False
 	else:
 		return True
+
+def save_account ( account_id, timestamp, margin_used, margin_available, unrealized_pl, realized_pl, margin_rate, open_trades, open_orders, balance ):
+	
+	# Create DynamoDB connection.
+	conn = boto.dynamodb.connect_to_region('us-east-1')
+	table = conn.get_table('forex_moving_average_account')
+
+	# Create DynamoDB tick item.
+	tick = table.new_item(
+		hash_key = account_id,
+		range_key = timestamp,
+		attrs = { 'margin_used': margin_used, 'margin_available': margin_available, 'unrealized_pl': unrealized_pl, 'realized_pl': realized_pl, 'margin_rate': margin_rate, 'open_trades': open_trades, 'open_orders': open_orders, 'balance': balance}
+	)
+
+	# Save DynamoDB item.
+	tick.put()
