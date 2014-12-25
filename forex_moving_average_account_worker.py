@@ -8,7 +8,7 @@ account_id = Globals.account
 token = Globals.token
 
 # Get current accout information.
-account = get_account(account, token)
+account = get_account(account_id, token)
 
 # Get current timestamp.
 timestamp = datetime.datetime.now().isoformat()

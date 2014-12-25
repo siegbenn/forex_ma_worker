@@ -82,7 +82,6 @@ for i in range(0,len(instruments)):
 	sentiment = moving_average_tick.sentiment
 	if sentiment == 'BEAR':
 		side = 'sell'
-
 	# Only queue orders if the market is open.
 	if market_open == True:
 		create_queue_order(instrument, side, units)
