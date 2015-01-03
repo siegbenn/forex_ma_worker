@@ -1,0 +1,12 @@
+* * * * * /usr/bin/python /home/ubuntu/forex_ma_worker/forex_moving_average_account_worker.py
+0 7 * * * /usr/bin/python /home/ubuntu/forex_ma_worker/forex_moving_average_tick_worker.py
+5 7 * * * /usr/bin/python /home/ubuntu/forex_ma_worker/forex_moving_average_queue_worker.py
+10 7 * * * /usr/bin/python /home/ubuntu/forex_ma_worker/forex_moving_average_order_worker.py
+
+mkdir .aws
+vim credentials
+[default]
+aws_access_key_id = AKIAJN6J25JHXDR2ZRHQ
+aws_secret_access_key = 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
+
+pip install request

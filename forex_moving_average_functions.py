@@ -11,12 +11,14 @@ from boto.dynamodb2.table import Table
 # Object to hold each moving average tick.
 class Moving_Average_Tick(object):
 
-    def __init__( self, timestamp, pair, moving_average_close, close, sentiment ):
+    def __init__( self, timestamp, pair, moving_average_close, close, sentiment, atr, order_percent ):
         self.timestamp = timestamp
         self.pair = pair
         self.moving_average_close = moving_average_close
         self.close = close
         self.sentiment = sentiment
+        self.atr = atr
+        self.order_percent = order_percent
 
 # Object to hold account information.
 class Account(object):
@@ -83,19 +85,38 @@ def create_moving_average_tick ( pair, length, granularity, token ):
 
 	# Calculate the moving average.
 	bar_sum = 0
+	tr_sum = 0
 	for i in range(0,bar_count):
-		bar_sum += (pair_candles[i]['closeBid'] + pair_candles[i]['closeAsk']) / 2
+		
+		# Set TR variables.
+		today_low = pair_candles[i]['lowAsk']
+		today_high = pair_candles[i]['highAsk']
+		yesterday_close = pair_candles[i-1]['closeAsk']
+		today_close = (pair_candles[i]['closeBid'] + pair_candles[i]['closeAsk']) / 2
+
+		# Get TR min and max.
+		low = [today_low,yesterday_close]
+		high = [today_high, yesterday_close]
+		tr_min = min(low)
+		tr_max = max(high)
+
+		# Calculate TR.
+		tr = (tr_max - tr_min) / today_close
+		tr_sum += tr
+
+		bar_sum += today_close
 
 	# Set the Moving_Average_Tick variables.
 	timestamp = pair_candles[bar_count-1]['time']
 	moving_average_close = (bar_sum / bar_count)
+	atr = tr_sum / bar_count
 	close = (pair_candles[bar_count-1]['closeBid'] + pair_candles[bar_count-1]['closeAsk']) / 2
 	sentiment = 'BULL'
 	if close < moving_average_close:
 		sentiment = 'BEAR'
 	
 	# Create the Moving_Average_Tick
-	moving_average_tick = Moving_Average_Tick(timestamp,pair,moving_average_close,close, sentiment)
+	moving_average_tick = Moving_Average_Tick(timestamp,pair,moving_average_close,close,sentiment,atr, 0)
 
 	# Return the Moving_Average_Tick.
 	return moving_average_tick
@@ -124,7 +145,7 @@ def get_instrument_list ( account, token ):
 	return instruments
 
 
-def save_moving_average_tick ( pair, timestamp, moving_average_close, close, sentiment):
+def save_moving_average_tick ( pair, timestamp, moving_average_close, close, sentiment, atr, order_percent):
 	
 	# Create DynamoDB connection.
 	conn = boto.dynamodb.connect_to_region('us-east-1')
@@ -134,7 +155,7 @@ def save_moving_average_tick ( pair, timestamp, moving_average_close, close, sen
 	tick = table.new_item(
 		hash_key = pair,
 		range_key = timestamp,
-		attrs = { 'close': close, 'moving_average_close': moving_average_close, 'sentiment': sentiment}
+		attrs = { 'close': close, 'moving_average_close': moving_average_close, 'sentiment': sentiment, 'atr': atr, 'order_percent': order_percent}
 	)
 
 	# Save DynamoDB item.
@@ -188,6 +209,7 @@ def get_moving_average_tick ( pair ):
 	moving_average_close = 0
 	close = 0
 	sentiment = ""
+	atr = 0
 
 	# Set the Moving_Average_Tick variables.
 	for tick in ticks:
@@ -196,9 +218,11 @@ def get_moving_average_tick ( pair ):
 		moving_average_close = tick['moving_average_close']
 		close = tick['moving_average_close']
 		sentiment = tick['sentiment']
+		atr = tick['atr']
+		order_percent = tick['order_percent']
 
 	# Set the Moving_Average_Tick.
-	moving_average_tick = Moving_Average_Tick(timestamp,pair,moving_average_close,close, sentiment)
+	moving_average_tick = Moving_Average_Tick(timestamp,pair,moving_average_close,close, sentiment, atr, order_percent)
 
 	# Return the Moving_Average_Tick.
 	return moving_average_tick
@@ -315,3 +339,5 @@ def save_account ( account_id, timestamp, margin_used, margin_available, unreali
 
 	# Save DynamoDB item.
 	tick.put()
+
+create_moving_average_tick('GBP_ZAR', 200, 'D', Globals.token)
