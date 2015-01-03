@@ -5,8 +5,6 @@
 
 mkdir .aws
 vim credentials
-[default]
-aws_access_key_id = AKIAJN6J25JHXDR2ZRHQ
-aws_secret_access_key = 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
+
 
 pip install request
